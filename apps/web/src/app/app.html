@@ -1,6 +1,1425 @@
-<main class="shell">
-  <h1>{{ title() }}</h1>
-  <p>Stato API: <strong>{{ health() }}</strong></p>
-</main>
+<div class="app-container">
+  @if (caricamentoIniziale()) {
+    <div class="loading-card">Caricamento Cooperativa Barbatelle…</div>
+  } @else if (!utente()) {
+    <!-- =================================================================== -->
+    <!-- SCHERMATA DI LOGIN (Account Nominativi: Admin, Commerciale, Socio)  -->
+    <!-- =================================================================== -->
+    <main class="login-wrapper">
+      <section class="login-card">
+        <div class="brand-header">
+          <span class="brand-badge">Cooperativa Produttori</span>
+          <h1>Magazzino Barbatelle</h1>
+          <p class="subtitle">Gestione conferimenti, disponibilità commerciale e ordini</p>
+        </div>
 
-<router-outlet />
+        @if (loginErrore()) {
+          <div class="alert alert-error">{{ loginErrore() }}</div>
+        }
+
+        <form (ngSubmit)="eseguiLogin()" class="form-stack">
+          <label class="field">
+            <span>Email nominativa</span>
+            <input
+              type="email"
+              name="email"
+              [ngModel]="loginEmail()"
+              (ngModelChange)="loginEmail.set($event)"
+              placeholder="nome@cooperativa.it"
+              required
+              autocomplete="username"
+            />
+          </label>
+
+          <label class="field">
+            <span>Password</span>
+            <input
+              type="password"
+              name="password"
+              [ngModel]="loginPassword()"
+              (ngModelChange)="loginPassword.set($event)"
+              placeholder="••••••••"
+              required
+              autocomplete="current-password"
+            />
+          </label>
+
+          <button type="submit" class="btn btn-primary btn-block" [disabled]="inInvio()">
+            {{ inInvio() ? 'Accesso in corso…' : 'Accedi' }}
+          </button>
+        </form>
+
+        @if (isAmbienteLocale) {
+          <div class="quick-demo">
+            <p class="quick-title">Accesso rapido di test (visibile solo in locale):</p>
+            <div class="quick-buttons">
+              <button type="button" class="btn btn-outline" (click)="compilaAccessoRapido('admin')">
+                Amministrazione
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline"
+                (click)="compilaAccessoRapido('commerciale')"
+              >
+                Commerciale
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline"
+                (click)="compilaAccessoRapido('produttore')"
+              >
+                Socio Produttore
+              </button>
+            </div>
+          </div>
+        }
+      </section>
+    </main>
+  } @else {
+    <!-- =================================================================== -->
+    <!-- BARRA SUPERIORE E NAVIGAZIONE PER RUOLO                             -->
+    <!-- =================================================================== -->
+    <header class="topbar">
+      <div class="topbar-brand">
+        <strong>Cooperativa Barbatelle</strong>
+        <span class="role-pill" [attr.data-role]="utente()!.ruolo">
+          {{ utente()!.nome }} ({{ utente()!.ruolo }})
+        </span>
+      </div>
+      <div class="topbar-actions">
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost"
+          (click)="mostraCambioPassword.set(!mostraCambioPassword())"
+        >
+          Cambia Password
+        </button>
+        <button type="button" class="btn btn-sm btn-outline" (click)="ricaricaDati()">
+          Aggiorna
+        </button>
+        <button type="button" class="btn btn-sm btn-ghost" (click)="eseguiLogout()">
+          Esci
+        </button>
+      </div>
+    </header>
+
+    <nav class="nav-tabs" aria-label="Pannelli applicazione">
+      @if (utente()!.ruolo === 'commerciale' || utente()!.ruolo === 'admin') {
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="vistaAttiva() === 'commerciali'"
+          (click)="cambiaVista('commerciali')"
+        >
+          1. Disponibilità &amp; Prenotazioni
+        </button>
+      }
+      @if (utente()!.ruolo === 'produttore' || utente()!.ruolo === 'admin') {
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="vistaAttiva() === 'produttori'"
+          (click)="cambiaVista('produttori')"
+        >
+          2. Scoperti &amp; Miei Conferimenti
+          @if (totaleCombinazioniScoperte() > 0) {
+            <span class="badge-danger">{{ totaleCombinazioniScoperte() }}</span>
+          }
+        </button>
+      }
+      @if (utente()!.ruolo === 'admin') {
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="vistaAttiva() === 'conferimenti'"
+          (click)="cambiaVista('conferimenti')"
+        >
+          3. Conferimenti Lotti
+          @if (segnalazioniAperte().length > 0) {
+            <span class="badge-danger">{{ segnalazioniAperte().length }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="vistaAttiva() === 'ordini'"
+          (click)="cambiaVista('ordini')"
+        >
+          4. Ordini e Spedizioni
+          @if (prenotazioniDaConfermare() > 0) {
+            <span class="badge-danger">{{ prenotazioniDaConfermare() }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="vistaAttiva() === 'catalogo'"
+          (click)="cambiaVista('catalogo')"
+        >
+          5. Catalogo e Utenti
+        </button>
+      }
+    </nav>
+
+    <main class="main-content">
+      @if (mostraCambioPassword()) {
+        <section class="panel">
+          <h3>Modifica la tua password</h3>
+          <form (ngSubmit)="cambiaPasswordPersonale()" class="form-grid">
+            <label class="field">
+              <span>Password attuale *</span>
+              <input
+                type="password"
+                name="passAttuale"
+                [ngModel]="passAttuale()"
+                (ngModelChange)="passAttuale.set($event)"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>Nuova password (min 8 caratteri) *</span>
+              <input
+                type="password"
+                name="passNuova"
+                [ngModel]="passNuova()"
+                (ngModelChange)="passNuova.set($event)"
+                minlength="8"
+                required
+              />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Salva nuova password</button>
+              <button
+                type="button"
+                class="btn btn-outline"
+                (click)="mostraCambioPassword.set(false)"
+              >
+                Annulla
+              </button>
+            </div>
+          </form>
+        </section>
+      }
+
+      @if (messaggioOk()) {
+        <div class="alert alert-success">{{ messaggioOk() }}</div>
+      }
+      @if (messaggioAvviso()) {
+        <div class="alert alert-warning">{{ messaggioAvviso() }}</div>
+      }
+      @if (messaggioErrore()) {
+        <div class="alert alert-error">{{ messaggioErrore() }}</div>
+      }
+
+      <!-- ================================================================= -->
+      <!-- VISTA 1 — PANNELLO COMMERCIALI (Disponibilità + Prenotazione)     -->
+      <!-- ================================================================= -->
+      @if (vistaAttiva() === 'commerciali') {
+        <section class="panel">
+          <div class="panel-header-between">
+            <div>
+              <h2>Disponibilità alla Vendita (Magazzino Virtuale)</h2>
+              <p class="subtitle">
+                Consulta le rimanenze vendibili e inserisci una prenotazione per un cliente (che
+                l'Amministrazione poi confermerà).
+              </p>
+            </div>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="mostraFormPrenotazioneComm.set(!mostraFormPrenotazioneComm())"
+            >
+              {{ mostraFormPrenotazioneComm() ? 'Chiudi modulo prenotazione' : '+ Nuova Prenotazione Cliente' }}
+            </button>
+          </div>
+
+          @if (mostraFormPrenotazioneComm()) {
+            <div class="subpanel">
+              <h3>Nuova Prenotazione / Proposta d'Ordine Cliente</h3>
+              <p class="subtitle">
+                L'ordine verrà salvato in stato <strong>bozza (da confermare)</strong> e sottoposto
+                all'Amministrazione.
+              </p>
+              <form (ngSubmit)="salvaOrdineCliente()" class="form-stack">
+                <div class="form-grid">
+                  <label class="field">
+                    <span>Cliente *</span>
+                    <input
+                      type="text"
+                      name="commClienteNome"
+                      [ngModel]="ordClienteNome()"
+                      (ngModelChange)="ordClienteNome.set($event)"
+                      placeholder="Ragione sociale o nome azienda agricola"
+                      required
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Data richiesta *</span>
+                    <input
+                      type="date"
+                      name="commDataOrdine"
+                      [ngModel]="ordData()"
+                      (ngModelChange)="ordData.set($event)"
+                      required
+                    />
+                  </label>
+                  <label class="field">
+                    <span>Note per l'Amministrazione</span>
+                    <input
+                      type="text"
+                      name="commOrdNote"
+                      [ngModel]="ordNote()"
+                      (ngModelChange)="ordNote.set($event)"
+                      placeholder="Accordi, urgenza, consegna..."
+                    />
+                  </label>
+                </div>
+
+                @for (riga of ordRighe(); track $index; let i = $index) {
+                  <div class="order-line-box">
+                    <div class="order-line-grid">
+                      <label class="field">
+                        <span>Varietà *</span>
+                        <select
+                          [name]="'cv_' + i"
+                          [ngModel]="riga.varietaId"
+                          (ngModelChange)="onCambioVarietaRiga(riga, $event)"
+                          required
+                        >
+                          <option [ngValue]="null">— Varietà —</option>
+                          @for (v of listaVarieta(); track v.id) {
+                            <option [ngValue]="v.id">{{ v.nome }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="field">
+                        <span>Clone *</span>
+                        <select
+                          [name]="'cc_' + i"
+                          [(ngModel)]="riga.cloneId"
+                          [disabled]="!riga.varietaId"
+                          required
+                        >
+                          <option [ngValue]="null">— Clone —</option>
+                          @for (c of cloniPerVarieta(riga.varietaId); track c.id) {
+                            <option [ngValue]="c.id">{{ c.codice }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="field">
+                        <span>Portainnesto *</span>
+                        <select [name]="'cp_' + i" [(ngModel)]="riga.portainnestoId" required>
+                          <option [ngValue]="null">— Portainnesto —</option>
+                          @for (p of listaPortainnesti(); track p.id) {
+                            <option [ngValue]="p.id">{{ p.codice }}</option>
+                          }
+                        </select>
+                      </label>
+                      <label class="field">
+                        <span>Quantità richiesta *</span>
+                        <input
+                          type="number"
+                          [name]="'cq_' + i"
+                          [(ngModel)]="riga.quantitaOrdinata"
+                          min="1"
+                          required
+                        />
+                      </label>
+                      <div class="line-actions">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline"
+                          (click)="rimuoviRigaOrdine(i)"
+                          [disabled]="ordRighe().length === 1"
+                        >
+                          Rimuovi
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                }
+
+                <div class="form-actions-between">
+                  <button type="button" class="btn btn-outline" (click)="aggiungiRigaOrdine()">
+                    + Aggiungi un'altra combinazione
+                  </button>
+                  <button type="submit" class="btn btn-primary">
+                    Invia Prenotazione all'Amministrazione
+                  </button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <div class="filter-bar">
+            <label class="field-inline">
+              <span>Varietà:</span>
+              <select
+                [ngModel]="filtroVarietaId()"
+                (ngModelChange)="filtroVarietaId.set($event ? +$event : null)"
+              >
+                <option [ngValue]="null">Tutte le varietà movimentate</option>
+                @for (v of listaVarieta(); track v.id) {
+                  <option [ngValue]="v.id">{{ v.nome }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field-inline">
+              <span>Cerca:</span>
+              <input
+                type="search"
+                [ngModel]="ricercaTesto()"
+                (ngModelChange)="ricercaTesto.set($event)"
+                placeholder="Varietà, clone o portainnesto…"
+              />
+            </label>
+
+            <label class="checkbox-inline">
+              <input
+                type="checkbox"
+                [ngModel]="soloDisponibiliComm()"
+                (ngModelChange)="soloDisponibiliComm.set($event)"
+              />
+              <span>Solo Disponibile &gt; 0</span>
+            </label>
+          </div>
+
+          <div class="cards-grid">
+            @for (item of disponibilitaCommerciali(); track item.varietaId + '-' + item.cloneId + '-' + item.portainnestoId) {
+              <article
+                class="stock-card"
+                [class.card-available]="item.disponibileVirtuale > 0"
+                [class.card-empty]="item.disponibileVirtuale === 0"
+                [class.card-negative]="item.disponibileVirtuale < 0"
+              >
+                <div class="stock-card-top">
+                  <div>
+                    <span class="varieta-label">{{ item.varietaNome }}</span>
+                    <h3>Clone {{ item.cloneCodice }} &bull; {{ item.portainnestoCodice }}</h3>
+                  </div>
+                  <div class="virtual-badge">
+                    <span class="badge-caption">Disponibile</span>
+                    <strong>{{ item.disponibileVirtuale | number }}</strong>
+                  </div>
+                </div>
+
+                <div class="metrics-row">
+                  <div class="metric">
+                    <span>Prodotto (Conferito)</span>
+                    <strong>{{ item.prodotto | number }}</strong>
+                  </div>
+                  <div class="metric">
+                    <span>Ordinato</span>
+                    <strong>{{ item.ordinato | number }}</strong>
+                  </div>
+                  <div class="metric">
+                    <span>Di cui Spedito</span>
+                    <strong>{{ item.spedito | number }}</strong>
+                  </div>
+                  <div class="metric">
+                    <span>Giacenza Fisica</span>
+                    <strong>{{ item.giacenzaFisica | number }}</strong>
+                  </div>
+                </div>
+
+                <div class="card-footer-actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline btn-block"
+                    (click)="prenotaDaScheda(item)"
+                  >
+                    Prenota per un cliente
+                  </button>
+                </div>
+              </article>
+            } @empty {
+              <p class="empty-state">Nessuna combinazione trovata per i filtri selezionati.</p>
+            }
+          </div>
+        </section>
+
+        @if (utente()!.ruolo === 'commerciale' && ordini().length > 0) {
+          <section class="panel">
+            <h3>Stato Prenotazioni e Ordini Clienti</h3>
+            <div class="orders-list">
+              @for (o of ordini(); track o.id) {
+                <article class="order-card" [attr.data-stato]="o.stato">
+                  <div class="order-card-header">
+                    <div>
+                      <span class="order-id">#{{ o.id }} &bull; {{ o.dataOrdine }}</span>
+                      <h4>{{ o.clienteNome }}</h4>
+                      @if (o.note) {
+                        <p class="order-note">{{ o.note }}</p>
+                      }
+                    </div>
+                    <span class="status-badge" [attr.data-stato]="o.stato">
+                      {{ o.stato === 'bozza' ? 'In attesa di conferma' : o.stato }}
+                    </span>
+                  </div>
+                  <ul class="pill-list">
+                    @for (r of o.righe; track r.id) {
+                      <li>
+                        {{ r.varietaNome }} {{ r.cloneCodice }} / {{ r.portainnestoCodice }}:
+                        <strong>{{ r.quantitaOrdinata | number }}</strong> pz (spediti:
+                        {{ r.quantitaSpedita | number }})
+                      </li>
+                    }
+                  </ul>
+                </article>
+              }
+            </div>
+          </section>
+        }
+      }
+
+      <!-- ================================================================= -->
+      <!-- VISTA 2 — PANNELLO PRODUTTORI / SOCI (Scoperti + Segnalazioni +   -->
+      <!--           Storico Propri Conferimenti)                            -->
+      <!-- ================================================================= -->
+      @if (vistaAttiva() === 'produttori') {
+        <section class="panel">
+          <div class="panel-header">
+            <div>
+              <h2>Fabbisogno Scoperto per i Soci Produttori</h2>
+              <p class="subtitle">
+                Combinazioni ordinate dai clienti che superano quanto conferito finora. Tocca
+                <strong>"Segnala mia disponibilità"</strong> se hai materiale per coprire uno
+                scoperto.
+              </p>
+            </div>
+          </div>
+
+          @if (combinazioneInSegnalazione(); as comb) {
+            <div class="subpanel">
+              <h3>
+                Segnala disponibilità per: {{ comb.varietaNome }} &bull; Clone
+                {{ comb.cloneCodice }} &bull; {{ comb.portainnestoCodice }}
+              </h3>
+              <form (ngSubmit)="inviaSegnalazioneDisponibilita()" class="form-grid">
+                @if (!utente()!.socioId) {
+                  <label class="field">
+                    <span>Socio Produttore *</span>
+                    <select
+                      name="segSocio"
+                      [ngModel]="segSocioId()"
+                      (ngModelChange)="segSocioId.set($event ? +$event : null)"
+                      required
+                    >
+                      <option [ngValue]="null">— Seleziona socio —</option>
+                      @for (s of listaSoci(); track s.id) {
+                        <option [ngValue]="s.id">{{ s.nome }}</option>
+                      }
+                    </select>
+                  </label>
+                }
+                <label class="field">
+                  <span>Quantità che puoi conferire (barbatelle) *</span>
+                  <input
+                    type="number"
+                    name="segQta"
+                    [ngModel]="segQuantita()"
+                    (ngModelChange)="segQuantita.set(+$event)"
+                    min="1"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Note (es. lotto, tempi di consegna)</span>
+                  <input
+                    type="text"
+                    name="segNote"
+                    [ngModel]="segNote()"
+                    (ngModelChange)="segNote.set($event)"
+                    placeholder="Pronte in magazzino aziendale..."
+                  />
+                </label>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Invia Segnalazione</button>
+                  <button
+                    type="button"
+                    class="btn btn-outline"
+                    (click)="combinazioneInSegnalazione.set(null)"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </form>
+            </div>
+          }
+
+          <div class="filter-bar">
+            <label class="field-inline">
+              <span>Filtra Varietà:</span>
+              <select
+                [ngModel]="filtroVarietaId()"
+                (ngModelChange)="filtroVarietaId.set($event ? +$event : null)"
+              >
+                <option [ngValue]="null">Tutte le varietà</option>
+                @for (v of listaVarieta(); track v.id) {
+                  <option [ngValue]="v.id">{{ v.nome }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="checkbox-inline">
+              <input
+                type="checkbox"
+                [ngModel]="mostraTuttiProduttori()"
+                (ngModelChange)="mostraTuttiProduttori.set($event)"
+              />
+              <span>Mostra anche combinazioni già coperte</span>
+            </label>
+          </div>
+
+          <div class="cards-grid">
+            @for (item of disponibilitaProduttori(); track item.varietaId + '-' + item.cloneId + '-' + item.portainnestoId) {
+              <article
+                class="stock-card"
+                [class.card-negative]="item.fabbisognoScoperto > 0"
+                [class.card-available]="item.fabbisognoScoperto === 0"
+              >
+                <div class="stock-card-top">
+                  <div>
+                    <span class="varieta-label">{{ item.varietaNome }}</span>
+                    <h3>Clone {{ item.cloneCodice }} &bull; {{ item.portainnestoCodice }}</h3>
+                  </div>
+                  <div class="virtual-badge deficit-badge">
+                    <span class="badge-caption">Scoperto da coprire</span>
+                    <strong>{{ item.fabbisognoScoperto | number }}</strong>
+                  </div>
+                </div>
+
+                <div class="metrics-row">
+                  <div class="metric">
+                    <span>Ordinato dai clienti</span>
+                    <strong>{{ item.ordinato | number }}</strong>
+                  </div>
+                  <div class="metric">
+                    <span>Conferito finora</span>
+                    <strong>{{ item.prodotto | number }}</strong>
+                  </div>
+                  <div class="metric">
+                    <span>Di cui già Spedito</span>
+                    <strong>{{ item.spedito | number }}</strong>
+                  </div>
+                </div>
+
+                <div class="card-footer-actions">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-primary btn-block"
+                    (click)="apriSegnalazioneScoperto(item)"
+                  >
+                    Segnala mia disponibilità
+                  </button>
+                </div>
+              </article>
+            } @empty {
+              <p class="empty-state">
+                Ottimo! Non ci sono fabbisogni scoperti per i filtri selezionati.
+              </p>
+            }
+          </div>
+        </section>
+
+        @if (segnalazioni().length > 0) {
+          <section class="panel">
+            <h3>Segnalazioni di Disponibilità Inviate</h3>
+            <div class="table-responsive">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th>Socio</th>
+                    <th>Combinazione</th>
+                    <th class="num">Quantità proposta</th>
+                    <th>Note</th>
+                    <th>Stato</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of segnalazioni(); track s.id) {
+                    <tr>
+                      <td><strong>{{ s.socioNome }}</strong></td>
+                      <td>
+                        {{ s.varietaNome }} &bull; Clone <strong>{{ s.cloneCodice }}</strong> &bull;
+                        <strong>{{ s.portainnestoCodice }}</strong>
+                      </td>
+                      <td class="num"><strong>{{ s.quantitaProposta | number }}</strong></td>
+                      <td>{{ s.note || '—' }}</td>
+                      <td><span class="status-badge">{{ s.stato }}</span></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+
+        <section class="panel">
+          <h3>
+            {{ utente()!.ruolo === 'produttore' ? 'Storico dei Miei Conferimenti' : 'Storico Conferimenti Soci' }}
+          </h3>
+          <div class="table-responsive">
+            <table class="data-table compact">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Socio</th>
+                  <th>Lotto</th>
+                  <th>Combinazione</th>
+                  <th class="num">Quantità</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of conferimenti(); track c.id) {
+                  <tr>
+                    <td>{{ c.dataConferimento }}</td>
+                    <td><strong>{{ c.socioNome }}</strong></td>
+                    <td>{{ c.codiceLotto || '—' }}</td>
+                    <td>
+                      {{ c.varietaNome }} &bull; Clone <strong>{{ c.cloneCodice }}</strong> &bull;
+                      <strong>{{ c.portainnestoCodice }}</strong>
+                    </td>
+                    <td class="num"><strong>{{ c.quantitaConferita | number }}</strong></td>
+                    <td>{{ c.note || '—' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="6" class="empty-state">Nessun conferimento registrato.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      <!-- ================================================================= -->
+      <!-- VISTA 3 — AMMINISTRAZIONE: CONFERIMENTI LOTTI DEI SOCI            -->
+      <!-- ================================================================= -->
+      @if (vistaAttiva() === 'conferimenti' && utente()!.ruolo === 'admin') {
+        @if (segnalazioniAperte().length > 0) {
+          <section class="panel highlight-panel">
+            <h3>Segnalazioni di Disponibilità dai Soci da Confermare</h3>
+            <p class="subtitle">
+              I seguenti soci hanno segnalato materiale disponibile per coprire gli scoperti. Con un
+              clic puoi convertirli in un conferimento effettivo.
+            </p>
+            <div class="table-responsive">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th>Socio</th>
+                    <th>Combinazione</th>
+                    <th class="num">Quantità proposta</th>
+                    <th>Note</th>
+                    <th class="num">Azioni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (seg of segnalazioniAperte(); track seg.id) {
+                    <tr>
+                      <td><strong>{{ seg.socioNome }}</strong></td>
+                      <td>
+                        {{ seg.varietaNome }} &bull; Clone
+                        <strong>{{ seg.cloneCodice }}</strong> &bull;
+                        <strong>{{ seg.portainnestoCodice }}</strong>
+                      </td>
+                      <td class="num"><strong>{{ seg.quantitaProposta | number }}</strong></td>
+                      <td>{{ seg.note || '—' }}</td>
+                      <td class="num">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary"
+                          (click)="convertiSegnalazioneInConferimento(seg)"
+                        >
+                          Converti in Conferimento
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline"
+                          (click)="archiviaSegnalazione(seg)"
+                        >
+                          Archivia
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        }
+
+        <section class="panel">
+          <h2>Registra Conferimento Socio (Lotto)</h2>
+          <p class="subtitle">
+            Seleziona il Socio e la combinazione vincolata Varietà &rarr; Clone + Portainnesto. Per
+            una rettifica negativa puoi inserire una quantità col segno meno.
+          </p>
+
+          <form (ngSubmit)="salvaConferimento()" class="form-grid">
+            <label class="field">
+              <span>1. Socio Produttore (o Terzi) *</span>
+              <select
+                name="socioId"
+                [ngModel]="confSocioId()"
+                (ngModelChange)="confSocioId.set($event ? +$event : null)"
+                required
+              >
+                <option [ngValue]="null">— Seleziona socio —</option>
+                @for (s of listaSoci(); track s.id) {
+                  <option [ngValue]="s.id">{{ s.nome }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>2. Varietà *</span>
+              <select
+                name="varietaId"
+                [ngModel]="confVarietaId()"
+                (ngModelChange)="onCambioVarietaConferimento($event)"
+                required
+              >
+                <option [ngValue]="null">— Seleziona varietà —</option>
+                @for (v of listaVarieta(); track v.id) {
+                  <option [ngValue]="v.id">{{ v.nome }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>3. Clone (vincolato alla Varietà) *</span>
+              <select
+                name="cloneId"
+                [ngModel]="confCloneId()"
+                (ngModelChange)="confCloneId.set($event ? +$event : null)"
+                [disabled]="!confVarietaId()"
+                required
+              >
+                <option [ngValue]="null">
+                  {{ confVarietaId() ? '— Seleziona clone —' : 'Prima scegli la varietà' }}
+                </option>
+                @for (c of cloniPerConferimento(); track c.id) {
+                  <option [ngValue]="c.id">{{ c.codice }}</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>4. Portainnesto *</span>
+              <select
+                name="portainnestoId"
+                [ngModel]="confPortainnestoId()"
+                (ngModelChange)="confPortainnestoId.set($event ? +$event : null)"
+                required
+              >
+                <option [ngValue]="null">— Seleziona portainnesto —</option>
+                @for (p of listaPortainnesti(); track p.id) {
+                  <option [ngValue]="p.id">{{ p.codice }} ({{ p.descrizione }})</option>
+                }
+              </select>
+            </label>
+
+            <label class="field">
+              <span>5. Quantità conferita (barbatelle) *</span>
+              <input
+                type="number"
+                name="quantita"
+                [ngModel]="confQuantita()"
+                (ngModelChange)="confQuantita.set(+$event)"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span>Codice Lotto (opzionale)</span>
+              <input
+                type="text"
+                name="codiceLotto"
+                [ngModel]="confCodiceLotto()"
+                (ngModelChange)="confCodiceLotto.set($event)"
+                placeholder="es. LOT-2026-010"
+              />
+            </label>
+
+            <label class="field">
+              <span>Data conferimento *</span>
+              <input
+                type="date"
+                name="dataConferimento"
+                [ngModel]="confData()"
+                (ngModelChange)="confData.set($event)"
+                required
+              />
+            </label>
+
+            <label class="field">
+              <span>Note</span>
+              <input
+                type="text"
+                name="note"
+                [ngModel]="confNote()"
+                (ngModelChange)="confNote.set($event)"
+                placeholder="Note opzionali"
+              />
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Registra Conferimento</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h3>Storico Conferimenti Registrati</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Socio</th>
+                  <th>Lotto</th>
+                  <th>Combinazione (Varietà &bull; Clone &bull; Portainnesto)</th>
+                  <th class="num">Quantità</th>
+                  <th>Note</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (c of conferimenti(); track c.id) {
+                  <tr>
+                    <td>{{ c.dataConferimento }}</td>
+                    <td><strong>{{ c.socioNome }}</strong></td>
+                    <td>{{ c.codiceLotto || '—' }}</td>
+                    <td>
+                      {{ c.varietaNome }} &bull; Clone <strong>{{ c.cloneCodice }}</strong> &bull;
+                      <strong>{{ c.portainnestoCodice }}</strong>
+                    </td>
+                    <td class="num">
+                      <strong>{{ c.quantitaConferita | number }}</strong>
+                    </td>
+                    <td>{{ c.note || '—' }}</td>
+                    <td class="num">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger-outline"
+                        (click)="eliminaConferimento(c.id)"
+                      >
+                        Elimina
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      <!-- ================================================================= -->
+      <!-- VISTA 4 — AMMINISTRAZIONE: ORDINI CLIENTI E SPEDIZIONI            -->
+      <!-- ================================================================= -->
+      @if (vistaAttiva() === 'ordini' && utente()!.ruolo === 'admin') {
+        <section class="panel">
+          <h2>Nuovo Ordine Cliente</h2>
+          <p class="subtitle">
+            Gli ordini lavorano sulla combinazione Varietà + Clone + Portainnesto (senza vincolo a un
+            singolo lotto fisico) e impegnano subito il Magazzino Virtuale.
+          </p>
+
+          <form (ngSubmit)="salvaOrdineCliente()" class="form-stack">
+            <div class="form-grid">
+              <label class="field">
+                <span>Cliente *</span>
+                <input
+                  type="text"
+                  name="clienteNome"
+                  [ngModel]="ordClienteNome()"
+                  (ngModelChange)="ordClienteNome.set($event)"
+                  placeholder="Ragione sociale o nome azienda agricola"
+                  required
+                />
+              </label>
+
+              <label class="field">
+                <span>Data ordine *</span>
+                <input
+                  type="date"
+                  name="dataOrdine"
+                  [ngModel]="ordData()"
+                  (ngModelChange)="ordData.set($event)"
+                  required
+                />
+              </label>
+
+              <label class="field">
+                <span>Note ordine</span>
+                <input
+                  type="text"
+                  name="ordNote"
+                  [ngModel]="ordNote()"
+                  (ngModelChange)="ordNote.set($event)"
+                  placeholder="Consegna, accordi..."
+                />
+              </label>
+            </div>
+
+            <h4>Righe d'ordine (Varietà &rarr; Clone + Portainnesto)</h4>
+            @for (riga of ordRighe(); track $index; let i = $index) {
+              <div class="order-line-box">
+                <div class="order-line-grid">
+                  <label class="field">
+                    <span>Varietà *</span>
+                    <select
+                      [name]="'v_' + i"
+                      [ngModel]="riga.varietaId"
+                      (ngModelChange)="onCambioVarietaRiga(riga, $event)"
+                      required
+                    >
+                      <option [ngValue]="null">— Varietà —</option>
+                      @for (v of listaVarieta(); track v.id) {
+                        <option [ngValue]="v.id">{{ v.nome }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Clone *</span>
+                    <select
+                      [name]="'c_' + i"
+                      [(ngModel)]="riga.cloneId"
+                      [disabled]="!riga.varietaId"
+                      required
+                    >
+                      <option [ngValue]="null">— Clone —</option>
+                      @for (c of cloniPerVarieta(riga.varietaId); track c.id) {
+                        <option [ngValue]="c.id">{{ c.codice }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Portainnesto *</span>
+                    <select [name]="'p_' + i" [(ngModel)]="riga.portainnestoId" required>
+                      <option [ngValue]="null">— Portainnesto —</option>
+                      @for (p of listaPortainnesti(); track p.id) {
+                        <option [ngValue]="p.id">{{ p.codice }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  <label class="field">
+                    <span>Quantità ordinata *</span>
+                    <input
+                      type="number"
+                      [name]="'q_' + i"
+                      [(ngModel)]="riga.quantitaOrdinata"
+                      min="1"
+                      required
+                    />
+                  </label>
+
+                  <div class="line-actions">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline"
+                      (click)="rimuoviRigaOrdine(i)"
+                      [disabled]="ordRighe().length === 1"
+                    >
+                      Rimuovi
+                    </button>
+                  </div>
+                </div>
+
+                @if (disponibilitaPerTripla(riga.varietaId, riga.cloneId, riga.portainnestoId); as disp) {
+                  <div class="line-stock-hint">
+                    Attualmente nel Magazzino Virtuale:
+                    <strong>{{ disp.disponibileVirtuale | number }}</strong> disponibili (Prodotto:
+                    {{ disp.prodotto | number }}, Ordinato: {{ disp.ordinato | number }})
+                  </div>
+                }
+              </div>
+            }
+
+            <div class="form-actions-between">
+              <button type="button" class="btn btn-outline" (click)="aggiungiRigaOrdine()">
+                + Aggiungi un'altra combinazione
+              </button>
+              <button type="submit" class="btn btn-primary">Conferma e Registra Ordine</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel">
+          <h3>Elenco Ordini Clienti, Prenotazioni Commerciali e Spedizioni</h3>
+          <div class="orders-list">
+            @for (o of ordini(); track o.id) {
+              <article class="order-card" [attr.data-stato]="o.stato">
+                <div class="order-card-header">
+                  <div>
+                    <span class="order-id">#{{ o.id }} &bull; {{ o.dataOrdine }}</span>
+                    <h4>{{ o.clienteNome }}</h4>
+                    @if (o.note) {
+                      <p class="order-note">{{ o.note }}</p>
+                    }
+                  </div>
+                  <span class="status-badge" [attr.data-stato]="o.stato">
+                    {{ o.stato === 'bozza' ? 'PRENOTAZIONE DA CONFERMARE' : o.stato }}
+                  </span>
+                </div>
+
+                <table class="data-table compact">
+                  <thead>
+                    <tr>
+                      <th>Combinazione</th>
+                      <th class="num">Ordinato</th>
+                      <th class="num">Di cui Spedito</th>
+                      <th class="num">Da Spedire</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (r of o.righe; track r.id) {
+                      <tr>
+                        <td>
+                          {{ r.varietaNome }} &bull; Clone <strong>{{ r.cloneCodice }}</strong> &bull;
+                          <strong>{{ r.portainnestoCodice }}</strong>
+                        </td>
+                        <td class="num">{{ r.quantitaOrdinata | number }}</td>
+                        <td class="num">
+                          @if (ordineInModificaSpedizione() === o.id) {
+                            <input
+                              type="number"
+                              class="ship-input"
+                              min="0"
+                              [max]="r.quantitaOrdinata"
+                              [ngModel]="spedizioneRigheMap()[r.id]"
+                              (ngModelChange)="aggiornaQuantitaSpeditaInput(r.id, $event)"
+                            />
+                          } @else {
+                            <strong>{{ r.quantitaSpedita | number }}</strong>
+                          }
+                        </td>
+                        <td class="num">{{ r.quantitaOrdinata - r.quantitaSpedita | number }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+
+                @if (o.stato !== 'annullato') {
+                  <div class="order-actions">
+                    @if (o.stato === 'bozza') {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        (click)="cambiaStatoOrdine(o, 'confermato')"
+                      >
+                        Conferma Prenotazione (Impegna Magazzino Virtuale)
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger-outline"
+                        (click)="cambiaStatoOrdine(o, 'annullato')"
+                      >
+                        Rifiuta / Annulla Prenotazione
+                      </button>
+                    } @else if (ordineInModificaSpedizione() === o.id) {
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        (click)="salvaSpedizioneParziale(o)"
+                      >
+                        Salva quantità spedite
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        (click)="ordineInModificaSpedizione.set(null)"
+                      >
+                        Annulla modifica
+                      </button>
+                    } @else {
+                      @if (o.stato !== 'spedito' && o.stato !== 'chiuso') {
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-primary"
+                          (click)="spedisciTuttoOrdine(o)"
+                        >
+                          Spedisci Tutto
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline"
+                          (click)="apriModificaSpedizione(o)"
+                        >
+                          Spedizione Parziale ("di cui spedito")
+                        </button>
+                      }
+                      @if (o.stato === 'parzialmente_spedito') {
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline"
+                          (click)="cambiaStatoOrdine(o, 'chiuso')"
+                        >
+                          Chiudi Residuo
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-danger-outline"
+                        (click)="cambiaStatoOrdine(o, 'annullato')"
+                      >
+                        Annulla Ordine (Libera Magazzino Virtuale)
+                      </button>
+                    }
+                  </div>
+                }
+              </article>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- ================================================================= -->
+      <!-- VISTA 5 — AMMINISTRAZIONE: CATALOGO ANAGRAFICHE E UTENTI          -->
+      <!-- ================================================================= -->
+      @if (vistaAttiva() === 'catalogo' && utente()!.ruolo === 'admin') {
+        <div class="catalog-grid">
+          <section class="panel">
+            <h3>1. Anagrafica Varietà</h3>
+            <form (ngSubmit)="aggiungiVarieta()" class="inline-add-form">
+              <input
+                type="text"
+                name="nuovaVarieta"
+                [ngModel]="nuovaVarietaNome()"
+                (ngModelChange)="nuovaVarietaNome.set($event)"
+                placeholder="Nuova varietà (es. Barbera)"
+                required
+              />
+              <button type="submit" class="btn btn-primary">Aggiungi</button>
+            </form>
+            <ul class="pill-list">
+              @for (v of listaVarieta(); track v.id) {
+                <li>{{ v.nome }}</li>
+              }
+            </ul>
+          </section>
+
+          <section class="panel">
+            <h3>2. Anagrafica Cloni (associati a Varietà)</h3>
+            <form (ngSubmit)="aggiungiClone()" class="inline-add-form">
+              <select
+                name="cloneVar"
+                [ngModel]="nuovoCloneVarietaId()"
+                (ngModelChange)="nuovoCloneVarietaId.set($event ? +$event : null)"
+                required
+              >
+                <option [ngValue]="null">— Varietà —</option>
+                @for (v of listaVarieta(); track v.id) {
+                  <option [ngValue]="v.id">{{ v.nome }}</option>
+                }
+              </select>
+              <input
+                type="text"
+                name="nuovoClone"
+                [ngModel]="nuovoCloneCodice()"
+                (ngModelChange)="nuovoCloneCodice.set($event)"
+                placeholder="Codice clone (es. VCR 10)"
+                required
+              />
+              <button type="submit" class="btn btn-primary">Aggiungi</button>
+            </form>
+            <ul class="pill-list">
+              @for (c of listaCloni(); track c.id) {
+                <li>Clone {{ c.codice }}</li>
+              }
+            </ul>
+          </section>
+
+          <section class="panel">
+            <h3>3. Anagrafica Portainnesti</h3>
+            <form (ngSubmit)="aggiungiPortainnesto()" class="inline-add-form">
+              <input
+                type="text"
+                name="codPort"
+                [ngModel]="nuovoPortainnestoCodice()"
+                (ngModelChange)="nuovoPortainnestoCodice.set($event)"
+                placeholder="Codice (es. 110R)"
+                required
+              />
+              <input
+                type="text"
+                name="descPort"
+                [ngModel]="nuovoPortainnestoDesc()"
+                (ngModelChange)="nuovoPortainnestoDesc.set($event)"
+                placeholder="Descrizione opzionale"
+              />
+              <button type="submit" class="btn btn-primary">Aggiungi</button>
+            </form>
+            <ul class="pill-list">
+              @for (p of listaPortainnesti(); track p.id) {
+                <li><strong>{{ p.codice }}</strong> {{ p.descrizione ? '— ' + p.descrizione : '' }}</li>
+              }
+            </ul>
+          </section>
+
+          <section class="panel">
+            <h3>4. Soci Produttori</h3>
+            <form (ngSubmit)="aggiungiSocio()" class="inline-add-form">
+              <input
+                type="text"
+                name="nomeSocio"
+                [ngModel]="nuovoSocioNome()"
+                (ngModelChange)="nuovoSocioNome.set($event)"
+                placeholder="Ragione sociale socio"
+                required
+              />
+              <button type="submit" class="btn btn-primary">Aggiungi</button>
+            </form>
+            <ul class="pill-list">
+              @for (s of listaSoci(); track s.id) {
+                <li>{{ s.nome }}</li>
+              }
+            </ul>
+          </section>
+        </div>
+
+        <section class="panel">
+          <h3>5. Account Nominativi (Amministrazione, Commerciali, Soci Produttori)</h3>
+          <form (ngSubmit)="aggiungiUtente()" class="form-grid">
+            <label class="field">
+              <span>Nome e Cognome *</span>
+              <input
+                type="text"
+                name="uNome"
+                [ngModel]="nuovoUtenteNome()"
+                (ngModelChange)="nuovoUtenteNome.set($event)"
+                placeholder="es. Luca Verdi"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>Email *</span>
+              <input
+                type="email"
+                name="uEmail"
+                [ngModel]="nuovoUtenteEmail()"
+                (ngModelChange)="nuovoUtenteEmail.set($event)"
+                placeholder="luca@cooperativa.it"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>Password iniziale (min 8 caratteri) *</span>
+              <input
+                type="password"
+                name="uPass"
+                [ngModel]="nuovoUtentePassword()"
+                (ngModelChange)="nuovoUtentePassword.set($event)"
+                required
+              />
+            </label>
+            <label class="field">
+              <span>Ruolo *</span>
+              <select
+                name="uRuolo"
+                [ngModel]="nuovoUtenteRuolo()"
+                (ngModelChange)="nuovoUtenteRuolo.set($event)"
+              >
+                <option value="commerciale">Commerciale (Disponibilità + Prenotazioni)</option>
+                <option value="produttore">Socio Produttore (Scoperti + Segnalazioni + Storico)</option>
+                <option value="admin">Amministrazione (Accesso completo)</option>
+              </select>
+            </label>
+            @if (nuovoUtenteRuolo() === 'produttore') {
+              <label class="field">
+                <span>Collega a Socio in anagrafica</span>
+                <select
+                  name="uSocio"
+                  [ngModel]="nuovoUtenteSocioId()"
+                  (ngModelChange)="nuovoUtenteSocioId.set($event ? +$event : null)"
+                >
+                  <option [ngValue]="null">— Nessuno / Generale —</option>
+                  @for (s of listaSoci(); track s.id) {
+                    <option [ngValue]="s.id">{{ s.nome }}</option>
+                  }
+                </select>
+              </label>
+            }
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">Crea Account Nominativo</button>
+            </div>
+          </form>
+
+          <table class="data-table compact">
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Ruolo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (u of listaUtenti(); track u.id) {
+                <tr>
+                  <td><strong>{{ u.nome }}</strong></td>
+                  <td>{{ u.email }}</td>
+                  <td><span class="role-pill" [attr.data-role]="u.ruolo">{{ u.ruolo }}</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </section>
+
+        <div class="catalog-grid">
+          <section class="panel">
+            <h3>6. Importazione Massiva Catalogo (CSV / Testo)</h3>
+            <p class="subtitle">
+              Incolla l'elenco esportato da Excel/Supabase per caricare in blocco Varietà, Cloni e
+              Portainnesti.
+            </p>
+            <form (ngSubmit)="eseguiImportMassivoCatalogo()" class="form-stack">
+              <label class="field">
+                <span>Varietà e Cloni (una per riga: <code>NomeVarietà;CodiceClone</code>)</span>
+                <textarea
+                  rows="4"
+                  name="impVar"
+                  [ngModel]="importRigheVarietaCloni()"
+                  (ngModelChange)="importRigheVarietaCloni.set($event)"
+                  placeholder="Sangiovese;F9&#10;Sangiovese;R24&#10;Pignoletto;CAB 13"
+                ></textarea>
+              </label>
+              <label class="field">
+                <span>Portainnesti (uno per riga: <code>Codice;Descrizione</code>)</span>
+                <textarea
+                  rows="3"
+                  name="impPort"
+                  [ngModel]="importRighePortainnesti()"
+                  (ngModelChange)="importRighePortainnesti.set($event)"
+                  placeholder="1103P;Paulsen 1103&#10;SO4;Selection Oppenheim 4"
+                ></textarea>
+              </label>
+              <button type="submit" class="btn btn-primary">Importa nel Catalogo</button>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h3>7. Backup e Sicurezza Dati</h3>
+            <p class="subtitle">
+              Oltre al backup notturno automatico su Cloudflare R2, puoi scaricare in qualsiasi
+              momento uno snapshot completo (.json) con anagrafiche, conferimenti, ordini e saldi.
+            </p>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" (click)="scaricaBackupManuale()">
+                Scarica Backup Completo (.json)
+              </button>
+            </div>
+          </section>
+        </div>
+      }
+    </main>
+  }
+</div>

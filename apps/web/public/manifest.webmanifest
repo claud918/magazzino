@@ -1,0 +1,21 @@
+{
+  "name": "Cooperativa Barbatelle — Magazzino e Ordini",
+  "short_name": "Barbatelle",
+  "description": "Consultazione disponibilità commerciali, scoperti soci e gestione conferimenti e ordini",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f4f6f3",
+  "theme_color": "#1b4332",
+  "lang": "it-IT",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

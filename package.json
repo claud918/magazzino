@@ -17,6 +17,10 @@
     "db:generate": "npm run db:generate -w @magazzino/api",
     "db:migrate:local": "npm run db:migrate:local -w @magazzino/api",
     "db:migrate:remote": "npm run db:migrate:remote -w @magazzino/api",
+    "db:seed:local": "npm run db:seed:local -w @magazzino/api",
+    "user:manage": "npm run user:manage -w @magazzino/api --",
+    "tunnel": "ssh -o StrictHostKeyChecking=no -R 80:127.0.0.1:8787 nokey@localhost.run",
+    "deploy:api": "npm run deploy -w @magazzino/api",
     "deploy": "npm run build && npm run deploy -w @magazzino/api"
   }
 }
