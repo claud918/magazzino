@@ -164,6 +164,56 @@ export class App implements OnInit {
     () => this.ordini().filter((o) => o.stato === 'bozza').length,
   );
 
+  // KPI sintetici per Vista 1 (Commerciali) e Vista 2 (Produttori)
+  protected readonly kpiCommerciali = computed(() => {
+    const lista = this.disponibilitaCommerciali();
+    let disponibile = 0;
+    let prodotto = 0;
+    let ordinato = 0;
+    for (const item of lista) {
+      if (item.disponibileVirtuale > 0) {
+        disponibile += item.disponibileVirtuale;
+      }
+      prodotto += item.prodotto;
+      ordinato += item.ordinato;
+    }
+    return { disponibile, prodotto, ordinato, combinazioni: lista.length };
+  });
+
+  protected readonly kpiProduttori = computed(() => {
+    const lista = this.disponibilita();
+    let scopertoTotale = 0;
+    let combinazioniScoperte = 0;
+    let prodottoTotale = 0;
+    for (const item of lista) {
+      prodottoTotale += item.prodotto;
+      if (item.fabbisognoScoperto > 0) {
+        scopertoTotale += item.fabbisognoScoperto;
+        combinazioniScoperte++;
+      }
+    }
+    return { scopertoTotale, combinazioniScoperte, prodottoTotale };
+  });
+
+  protected etichettaStatoOrdine(stato: string): string {
+    switch (stato) {
+      case 'bozza':
+        return 'Da confermare';
+      case 'confermato':
+        return 'Confermato';
+      case 'parzialmente_spedito':
+        return 'Spedito parz.';
+      case 'spedito':
+        return 'Spedito';
+      case 'chiuso':
+        return 'Chiuso';
+      case 'annullato':
+        return 'Annullato';
+      default:
+        return stato;
+    }
+  }
+
   ngOnInit(): void {
     this.verificaSessione();
   }

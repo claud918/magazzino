@@ -1,6 +1,9 @@
 <div class="app-container">
   @if (caricamentoIniziale()) {
-    <div class="loading-card">Caricamento Cooperativa Barbatelle…</div>
+    <div class="loading-screen">
+      <div class="spinner" aria-hidden="true"></div>
+      <p>Caricamento Cooperativa Barbatelle…</p>
+    </div>
   } @else if (!utente()) {
     <!-- =================================================================== -->
     <!-- SCHERMATA DI LOGIN (Account Nominativi: Admin, Commerciale, Socio)  -->
@@ -8,13 +11,32 @@
     <main class="login-wrapper">
       <section class="login-card">
         <div class="brand-header">
+          <div class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 36 36" fill="none">
+              <rect width="36" height="36" rx="10" fill="#143d2b" />
+              <circle cx="14" cy="15" r="3" fill="#b7e4c7" />
+              <circle cx="22" cy="15" r="3" fill="#b7e4c7" />
+              <circle cx="18" cy="20.5" r="3" fill="#74c69d" />
+              <circle cx="13.5" cy="25" r="2.6" fill="#52b788" />
+              <circle cx="22.5" cy="25" r="2.6" fill="#52b788" />
+              <circle cx="18" cy="29.5" r="2.4" fill="#40916c" />
+              <path
+                d="M18 6.5v5.5M14.5 9c2-1.8 5-1.8 7 0"
+                stroke="#d8f3dc"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
           <span class="brand-badge">Cooperativa Produttori</span>
           <h1>Magazzino Barbatelle</h1>
-          <p class="subtitle">Gestione conferimenti, disponibilità commerciale e ordini</p>
+          <p class="subtitle">
+            Piattaforma digitale per conferimenti soci, disponibilità commerciale e ordini clienti
+          </p>
         </div>
 
         @if (loginErrore()) {
-          <div class="alert alert-error">{{ loginErrore() }}</div>
+          <div class="alert alert-error" role="alert">{{ loginErrore() }}</div>
         }
 
         <form (ngSubmit)="eseguiLogin()" class="form-stack">
@@ -44,31 +66,34 @@
             />
           </label>
 
-          <button type="submit" class="btn btn-primary btn-block" [disabled]="inInvio()">
-            {{ inInvio() ? 'Accesso in corso…' : 'Accedi' }}
+          <button type="submit" class="btn btn-primary btn-block btn-lg" [disabled]="inInvio()">
+            {{ inInvio() ? 'Accesso in corso…' : 'Accedi alla piattaforma' }}
           </button>
         </form>
 
         @if (isAmbienteLocale) {
           <div class="quick-demo">
-            <p class="quick-title">Accesso rapido di test (visibile solo in locale):</p>
+            <p class="quick-title">Accesso rapido di test (scegli un profilo):</p>
             <div class="quick-buttons">
-              <button type="button" class="btn btn-outline" (click)="compilaAccessoRapido('admin')">
-                Amministrazione
+              <button type="button" class="demo-role-btn" (click)="compilaAccessoRapido('admin')">
+                <strong>Amministrazione</strong>
+                <span>Conferimenti, ordini e catalogo</span>
               </button>
               <button
                 type="button"
-                class="btn btn-outline"
+                class="demo-role-btn"
                 (click)="compilaAccessoRapido('commerciale')"
               >
-                Commerciale
+                <strong>Commerciale</strong>
+                <span>Disponibilità e prenotazioni</span>
               </button>
               <button
                 type="button"
-                class="btn btn-outline"
+                class="demo-role-btn"
                 (click)="compilaAccessoRapido('produttore')"
               >
-                Socio Produttore
+                <strong>Socio Produttore</strong>
+                <span>Scoperti e miei conferimenti</span>
               </button>
             </div>
           </div>
@@ -80,86 +105,108 @@
     <!-- BARRA SUPERIORE E NAVIGAZIONE PER RUOLO                             -->
     <!-- =================================================================== -->
     <header class="topbar">
-      <div class="topbar-brand">
-        <strong>Cooperativa Barbatelle</strong>
-        <span class="role-pill" [attr.data-role]="utente()!.ruolo">
-          {{ utente()!.nome }} ({{ utente()!.ruolo }})
-        </span>
-      </div>
-      <div class="topbar-actions">
-        <button
-          type="button"
-          class="btn btn-sm btn-ghost"
-          (click)="mostraCambioPassword.set(!mostraCambioPassword())"
-        >
-          Cambia Password
-        </button>
-        <button type="button" class="btn btn-sm btn-outline" (click)="ricaricaDati()">
-          Aggiorna
-        </button>
-        <button type="button" class="btn btn-sm btn-ghost" (click)="eseguiLogout()">
-          Esci
-        </button>
+      <div class="topbar-inner">
+        <div class="topbar-brand">
+          <div class="topbar-icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none">
+              <circle cx="10.5" cy="11" r="2.5" fill="#b7e4c7" />
+              <circle cx="17.5" cy="11" r="2.5" fill="#b7e4c7" />
+              <circle cx="14" cy="16" r="2.5" fill="#74c69d" />
+              <circle cx="10" cy="20.5" r="2.2" fill="#52b788" />
+              <circle cx="18" cy="20.5" r="2.2" fill="#52b788" />
+              <circle cx="14" cy="24.5" r="2" fill="#40916c" />
+              <path
+                d="M14 3.5v4.5M11 5.5c1.8-1.5 4.2-1.5 6 0"
+                stroke="#d8f3dc"
+                stroke-width="1.8"
+                stroke-linecap="round"
+              />
+            </svg>
+          </div>
+          <div class="topbar-title-group">
+            <strong>Cooperativa Barbatelle</strong>
+            <span class="role-pill" [attr.data-role]="utente()!.ruolo">
+              {{ utente()!.nome }} &bull; {{ utente()!.ruolo }}
+            </span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost-light"
+            (click)="mostraCambioPassword.set(!mostraCambioPassword())"
+          >
+            Password
+          </button>
+          <button type="button" class="btn btn-sm btn-ghost-light" (click)="ricaricaDati()">
+            Aggiorna
+          </button>
+          <button type="button" class="btn btn-sm btn-ghost-light" (click)="eseguiLogout()">
+            Esci
+          </button>
+        </div>
       </div>
     </header>
 
-    <nav class="nav-tabs" aria-label="Pannelli applicazione">
-      @if (utente()!.ruolo === 'commerciale' || utente()!.ruolo === 'admin') {
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="vistaAttiva() === 'commerciali'"
-          (click)="cambiaVista('commerciali')"
-        >
-          1. Disponibilità &amp; Prenotazioni
-        </button>
-      }
-      @if (utente()!.ruolo === 'produttore' || utente()!.ruolo === 'admin') {
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="vistaAttiva() === 'produttori'"
-          (click)="cambiaVista('produttori')"
-        >
-          2. Scoperti &amp; Miei Conferimenti
-          @if (totaleCombinazioniScoperte() > 0) {
-            <span class="badge-danger">{{ totaleCombinazioniScoperte() }}</span>
-          }
-        </button>
-      }
-      @if (utente()!.ruolo === 'admin') {
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="vistaAttiva() === 'conferimenti'"
-          (click)="cambiaVista('conferimenti')"
-        >
-          3. Conferimenti Lotti
-          @if (segnalazioniAperte().length > 0) {
-            <span class="badge-danger">{{ segnalazioniAperte().length }}</span>
-          }
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="vistaAttiva() === 'ordini'"
-          (click)="cambiaVista('ordini')"
-        >
-          4. Ordini e Spedizioni
-          @if (prenotazioniDaConfermare() > 0) {
-            <span class="badge-danger">{{ prenotazioniDaConfermare() }}</span>
-          }
-        </button>
-        <button
-          type="button"
-          class="tab-btn"
-          [class.active]="vistaAttiva() === 'catalogo'"
-          (click)="cambiaVista('catalogo')"
-        >
-          5. Catalogo e Utenti
-        </button>
-      }
-    </nav>
+    <div class="nav-wrapper">
+      <nav class="nav-tabs" aria-label="Pannelli applicazione">
+        @if (utente()!.ruolo === 'commerciale' || utente()!.ruolo === 'admin') {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="vistaAttiva() === 'commerciali'"
+            (click)="cambiaVista('commerciali')"
+          >
+            <span>Disponibilità &amp; Prenotazioni</span>
+          </button>
+        }
+        @if (utente()!.ruolo === 'produttore' || utente()!.ruolo === 'admin') {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="vistaAttiva() === 'produttori'"
+            (click)="cambiaVista('produttori')"
+          >
+            <span>Scoperti &amp; Soci</span>
+            @if (totaleCombinazioniScoperte() > 0) {
+              <span class="badge-danger">{{ totaleCombinazioniScoperte() }}</span>
+            }
+          </button>
+        }
+        @if (utente()!.ruolo === 'admin') {
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="vistaAttiva() === 'conferimenti'"
+            (click)="cambiaVista('conferimenti')"
+          >
+            <span>Conferimenti Lotti</span>
+            @if (segnalazioniAperte().length > 0) {
+              <span class="badge-danger">{{ segnalazioniAperte().length }}</span>
+            }
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="vistaAttiva() === 'ordini'"
+            (click)="cambiaVista('ordini')"
+          >
+            <span>Ordini &amp; Spedizioni</span>
+            @if (prenotazioniDaConfermare() > 0) {
+              <span class="badge-warning">{{ prenotazioniDaConfermare() }}</span>
+            }
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            [class.active]="vistaAttiva() === 'catalogo'"
+            (click)="cambiaVista('catalogo')"
+          >
+            <span>Catalogo &amp; Utenti</span>
+          </button>
+        }
+      </nav>
+    </div>
 
     <main class="main-content">
       @if (mostraCambioPassword()) {
@@ -202,26 +249,45 @@
       }
 
       @if (messaggioOk()) {
-        <div class="alert alert-success">{{ messaggioOk() }}</div>
+        <div class="alert alert-success" role="status">{{ messaggioOk() }}</div>
       }
       @if (messaggioAvviso()) {
-        <div class="alert alert-warning">{{ messaggioAvviso() }}</div>
+        <div class="alert alert-warning" role="alert">{{ messaggioAvviso() }}</div>
       }
       @if (messaggioErrore()) {
-        <div class="alert alert-error">{{ messaggioErrore() }}</div>
+        <div class="alert alert-error" role="alert">{{ messaggioErrore() }}</div>
       }
 
       <!-- ================================================================= -->
       <!-- VISTA 1 — PANNELLO COMMERCIALI (Disponibilità + Prenotazione)     -->
       <!-- ================================================================= -->
       @if (vistaAttiva() === 'commerciali') {
+        <!-- Riepilogo KPI rapidi -->
+        <div class="kpi-strip">
+          <div class="kpi-card kpi-emerald">
+            <span class="kpi-label">Disponibile alla Vendita</span>
+            <strong class="kpi-value">{{ kpiCommerciali().disponibile | number }}</strong>
+            <span class="kpi-sub">barbatelle nel Magazzino Virtuale</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Totale Conferito dai Soci</span>
+            <strong class="kpi-value">{{ kpiCommerciali().prodotto | number }}</strong>
+            <span class="kpi-sub">su {{ kpiCommerciali().combinazioni }} combinazioni</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Totale Impegnato in Ordini</span>
+            <strong class="kpi-value">{{ kpiCommerciali().ordinato | number }}</strong>
+            <span class="kpi-sub">ordini clienti confermati</span>
+          </div>
+        </div>
+
         <section class="panel">
           <div class="panel-header-between">
             <div>
-              <h2>Disponibilità alla Vendita (Magazzino Virtuale)</h2>
+              <h2>Magazzino Virtuale &amp; Disponibilità</h2>
               <p class="subtitle">
-                Consulta le rimanenze vendibili e inserisci una prenotazione per un cliente (che
-                l'Amministrazione poi confermerà).
+                Seleziona la Varietà o cerca un clone/portainnesto. Puoi prenotare un ordine per un
+                cliente direttamente dalla scheda.
               </p>
             </div>
             <button
@@ -229,7 +295,11 @@
               class="btn btn-primary"
               (click)="mostraFormPrenotazioneComm.set(!mostraFormPrenotazioneComm())"
             >
-              {{ mostraFormPrenotazioneComm() ? 'Chiudi modulo prenotazione' : '+ Nuova Prenotazione Cliente' }}
+              {{
+                mostraFormPrenotazioneComm()
+                  ? 'Chiudi modulo prenotazione'
+                  : '+ Nuova Prenotazione Cliente'
+              }}
             </button>
           </div>
 
@@ -237,7 +307,7 @@
             <div class="subpanel">
               <h3>Nuova Prenotazione / Proposta d'Ordine Cliente</h3>
               <p class="subtitle">
-                L'ordine verrà salvato in stato <strong>bozza (da confermare)</strong> e sottoposto
+                L'ordine nasce in stato <strong>da confermare</strong> e viene sottoposto
                 all'Amministrazione.
               </p>
               <form (ngSubmit)="salvaOrdineCliente()" class="form-stack">
@@ -352,8 +422,8 @@
           }
 
           <div class="filter-bar">
-            <label class="field-inline">
-              <span>Varietà:</span>
+            <label class="field-filter">
+              <span>Varietà</span>
               <select
                 [ngModel]="filtroVarietaId()"
                 (ngModelChange)="filtroVarietaId.set($event ? +$event : null)"
@@ -365,28 +435,31 @@
               </select>
             </label>
 
-            <label class="field-inline">
-              <span>Cerca:</span>
+            <label class="field-filter search-filter">
+              <span>Ricerca rapida</span>
               <input
                 type="search"
                 [ngModel]="ricercaTesto()"
                 (ngModelChange)="ricercaTesto.set($event)"
-                placeholder="Varietà, clone o portainnesto…"
+                placeholder="Es. Sangiovese, F9, 1103P…"
               />
             </label>
 
-            <label class="checkbox-inline">
+            <label class="checkbox-pill">
               <input
                 type="checkbox"
                 [ngModel]="soloDisponibiliComm()"
                 (ngModelChange)="soloDisponibiliComm.set($event)"
               />
-              <span>Solo Disponibile &gt; 0</span>
+              <span>Solo con Disponibile &gt; 0</span>
             </label>
           </div>
 
           <div class="cards-grid">
-            @for (item of disponibilitaCommerciali(); track item.varietaId + '-' + item.cloneId + '-' + item.portainnestoId) {
+            @for (
+              item of disponibilitaCommerciali();
+              track item.varietaId + '-' + item.cloneId + '-' + item.portainnestoId
+            ) {
               <article
                 class="stock-card"
                 [class.card-available]="item.disponibileVirtuale > 0"
@@ -396,7 +469,10 @@
                 <div class="stock-card-top">
                   <div>
                     <span class="varieta-label">{{ item.varietaNome }}</span>
-                    <h3>Clone {{ item.cloneCodice }} &bull; {{ item.portainnestoCodice }}</h3>
+                    <div class="combo-chips">
+                      <span class="chip">Clone <strong>{{ item.cloneCodice }}</strong></span>
+                      <span class="chip chip-root">{{ item.portainnestoCodice }}</span>
+                    </div>
                   </div>
                   <div class="virtual-badge">
                     <span class="badge-caption">Disponibile</span>
@@ -454,7 +530,7 @@
                       }
                     </div>
                     <span class="status-badge" [attr.data-stato]="o.stato">
-                      {{ o.stato === 'bozza' ? 'In attesa di conferma' : o.stato }}
+                      {{ etichettaStatoOrdine(o.stato) }}
                     </span>
                   </div>
                   <ul class="pill-list">
@@ -478,6 +554,26 @@
       <!--           Storico Propri Conferimenti)                            -->
       <!-- ================================================================= -->
       @if (vistaAttiva() === 'produttori') {
+        <div class="kpi-strip">
+          <div class="kpi-card kpi-danger">
+            <span class="kpi-label">Fabbisogno Scoperto Totale</span>
+            <strong class="kpi-value">{{ kpiProduttori().scopertoTotale | number }}</strong>
+            <span class="kpi-sub">
+              su {{ kpiProduttori().combinazioniScoperte }} combinazioni da coprire
+            </span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Conferimenti Registrati</span>
+            <strong class="kpi-value">{{ conferimenti().length }}</strong>
+            <span class="kpi-sub">lotti presenti nello storico</span>
+          </div>
+          <div class="kpi-card">
+            <span class="kpi-label">Segnalazioni Inviate</span>
+            <strong class="kpi-value">{{ segnalazioni().length }}</strong>
+            <span class="kpi-sub">proposte di copertura inviate</span>
+          </div>
+        </div>
+
         <section class="panel">
           <div class="panel-header">
             <div>
@@ -549,8 +645,8 @@
           }
 
           <div class="filter-bar">
-            <label class="field-inline">
-              <span>Filtra Varietà:</span>
+            <label class="field-filter">
+              <span>Filtra Varietà</span>
               <select
                 [ngModel]="filtroVarietaId()"
                 (ngModelChange)="filtroVarietaId.set($event ? +$event : null)"
@@ -562,7 +658,7 @@
               </select>
             </label>
 
-            <label class="checkbox-inline">
+            <label class="checkbox-pill">
               <input
                 type="checkbox"
                 [ngModel]="mostraTuttiProduttori()"
@@ -573,7 +669,10 @@
           </div>
 
           <div class="cards-grid">
-            @for (item of disponibilitaProduttori(); track item.varietaId + '-' + item.cloneId + '-' + item.portainnestoId) {
+            @for (
+              item of disponibilitaProduttori();
+              track item.varietaId + '-' + item.cloneId + '-' + item.portainnestoId
+            ) {
               <article
                 class="stock-card"
                 [class.card-negative]="item.fabbisognoScoperto > 0"
@@ -582,7 +681,10 @@
                 <div class="stock-card-top">
                   <div>
                     <span class="varieta-label">{{ item.varietaNome }}</span>
-                    <h3>Clone {{ item.cloneCodice }} &bull; {{ item.portainnestoCodice }}</h3>
+                    <div class="combo-chips">
+                      <span class="chip">Clone <strong>{{ item.cloneCodice }}</strong></span>
+                      <span class="chip chip-root">{{ item.portainnestoCodice }}</span>
+                    </div>
                   </div>
                   <div class="virtual-badge deficit-badge">
                     <span class="badge-caption">Scoperto da coprire</span>
@@ -658,7 +760,11 @@
 
         <section class="panel">
           <h3>
-            {{ utente()!.ruolo === 'produttore' ? 'Storico dei Miei Conferimenti' : 'Storico Conferimenti Soci' }}
+            {{
+              utente()!.ruolo === 'produttore'
+                ? 'Storico dei Miei Conferimenti'
+                : 'Storico Conferimenti Soci'
+            }}
           </h3>
           <div class="table-responsive">
             <table class="data-table compact">
@@ -1035,7 +1141,10 @@
                   </div>
                 </div>
 
-                @if (disponibilitaPerTripla(riga.varietaId, riga.cloneId, riga.portainnestoId); as disp) {
+                @if (
+                  disponibilitaPerTripla(riga.varietaId, riga.cloneId, riga.portainnestoId);
+                  as disp
+                ) {
                   <div class="line-stock-hint">
                     Attualmente nel Magazzino Virtuale:
                     <strong>{{ disp.disponibileVirtuale | number }}</strong> disponibili (Prodotto:
@@ -1068,7 +1177,7 @@
                     }
                   </div>
                   <span class="status-badge" [attr.data-stato]="o.stato">
-                    {{ o.stato === 'bozza' ? 'PRENOTAZIONE DA CONFERMARE' : o.stato }}
+                    {{ etichettaStatoOrdine(o.stato) }}
                   </span>
                 </div>
 
@@ -1136,7 +1245,7 @@
                       </button>
                       <button
                         type="button"
-                        class="btn btn-sm btn-ghost"
+                        class="btn btn-sm btn-outline"
                         (click)="ordineInModificaSpedizione.set(null)"
                       >
                         Annulla modifica
@@ -1261,7 +1370,9 @@
             </form>
             <ul class="pill-list">
               @for (p of listaPortainnesti(); track p.id) {
-                <li><strong>{{ p.codice }}</strong> {{ p.descrizione ? '— ' + p.descrizione : '' }}</li>
+                <li>
+                  <strong>{{ p.codice }}</strong> {{ p.descrizione ? '— ' + p.descrizione : '' }}
+                </li>
               }
             </ul>
           </section>
@@ -1330,7 +1441,9 @@
                 (ngModelChange)="nuovoUtenteRuolo.set($event)"
               >
                 <option value="commerciale">Commerciale (Disponibilità + Prenotazioni)</option>
-                <option value="produttore">Socio Produttore (Scoperti + Segnalazioni + Storico)</option>
+                <option value="produttore">
+                  Socio Produttore (Scoperti + Segnalazioni + Storico)
+                </option>
                 <option value="admin">Amministrazione (Accesso completo)</option>
               </select>
             </label>
