@@ -1,4 +1,5 @@
 <div class="app-container">
+  <div class="ios-safe-top" aria-hidden="true"></div>
   @if (caricamentoIniziale()) {
     <div class="loading-screen">
       <div class="spinner" aria-hidden="true"></div>
@@ -104,108 +105,110 @@
     <!-- =================================================================== -->
     <!-- BARRA SUPERIORE E NAVIGAZIONE PER RUOLO                             -->
     <!-- =================================================================== -->
-    <header class="topbar">
-      <div class="topbar-inner">
-        <div class="topbar-brand">
-          <div class="topbar-icon" aria-hidden="true">
-            <svg viewBox="0 0 28 28" fill="none">
-              <circle cx="10.5" cy="11" r="2.5" fill="#b7e4c7" />
-              <circle cx="17.5" cy="11" r="2.5" fill="#b7e4c7" />
-              <circle cx="14" cy="16" r="2.5" fill="#74c69d" />
-              <circle cx="10" cy="20.5" r="2.2" fill="#52b788" />
-              <circle cx="18" cy="20.5" r="2.2" fill="#52b788" />
-              <circle cx="14" cy="24.5" r="2" fill="#40916c" />
-              <path
-                d="M14 3.5v4.5M11 5.5c1.8-1.5 4.2-1.5 6 0"
-                stroke="#d8f3dc"
-                stroke-width="1.8"
-                stroke-linecap="round"
-              />
-            </svg>
+    <div class="sticky-shell">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="topbar-brand">
+            <div class="topbar-icon" aria-hidden="true">
+              <svg viewBox="0 0 28 28" fill="none">
+                <circle cx="10.5" cy="11" r="2.5" fill="#b7e4c7" />
+                <circle cx="17.5" cy="11" r="2.5" fill="#b7e4c7" />
+                <circle cx="14" cy="16" r="2.5" fill="#74c69d" />
+                <circle cx="10" cy="20.5" r="2.2" fill="#52b788" />
+                <circle cx="18" cy="20.5" r="2.2" fill="#52b788" />
+                <circle cx="14" cy="24.5" r="2" fill="#40916c" />
+                <path
+                  d="M14 3.5v4.5M11 5.5c1.8-1.5 4.2-1.5 6 0"
+                  stroke="#d8f3dc"
+                  stroke-width="1.8"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </div>
+            <div class="topbar-title-group">
+              <strong>Cooperativa Barbatelle</strong>
+              <span class="role-pill" [attr.data-role]="utente()!.ruolo">
+                {{ utente()!.nome }} &bull; {{ utente()!.ruolo }}
+              </span>
+            </div>
           </div>
-          <div class="topbar-title-group">
-            <strong>Cooperativa Barbatelle</strong>
-            <span class="role-pill" [attr.data-role]="utente()!.ruolo">
-              {{ utente()!.nome }} &bull; {{ utente()!.ruolo }}
-            </span>
+          <div class="topbar-actions">
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost-light"
+              (click)="mostraCambioPassword.set(!mostraCambioPassword())"
+            >
+              Password
+            </button>
+            <button type="button" class="btn btn-sm btn-ghost-light" (click)="ricaricaDati()">
+              Aggiorna
+            </button>
+            <button type="button" class="btn btn-sm btn-ghost-light" (click)="eseguiLogout()">
+              Esci
+            </button>
           </div>
         </div>
-        <div class="topbar-actions">
-          <button
-            type="button"
-            class="btn btn-sm btn-ghost-light"
-            (click)="mostraCambioPassword.set(!mostraCambioPassword())"
-          >
-            Password
-          </button>
-          <button type="button" class="btn btn-sm btn-ghost-light" (click)="ricaricaDati()">
-            Aggiorna
-          </button>
-          <button type="button" class="btn btn-sm btn-ghost-light" (click)="eseguiLogout()">
-            Esci
-          </button>
-        </div>
-      </div>
-    </header>
+      </header>
 
-    <div class="nav-wrapper">
-      <nav class="nav-tabs" aria-label="Pannelli applicazione">
-        @if (utente()!.ruolo === 'commerciale' || utente()!.ruolo === 'admin') {
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="vistaAttiva() === 'commerciali'"
-            (click)="cambiaVista('commerciali')"
-          >
-            <span>Disponibilità &amp; Prenotazioni</span>
-          </button>
-        }
-        @if (utente()!.ruolo === 'produttore' || utente()!.ruolo === 'admin') {
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="vistaAttiva() === 'produttori'"
-            (click)="cambiaVista('produttori')"
-          >
-            <span>Scoperti &amp; Soci</span>
-            @if (totaleCombinazioniScoperte() > 0) {
-              <span class="badge-danger">{{ totaleCombinazioniScoperte() }}</span>
-            }
-          </button>
-        }
-        @if (utente()!.ruolo === 'admin') {
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="vistaAttiva() === 'conferimenti'"
-            (click)="cambiaVista('conferimenti')"
-          >
-            <span>Conferimenti Lotti</span>
-            @if (segnalazioniAperte().length > 0) {
-              <span class="badge-danger">{{ segnalazioniAperte().length }}</span>
-            }
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="vistaAttiva() === 'ordini'"
-            (click)="cambiaVista('ordini')"
-          >
-            <span>Ordini &amp; Spedizioni</span>
-            @if (prenotazioniDaConfermare() > 0) {
-              <span class="badge-warning">{{ prenotazioniDaConfermare() }}</span>
-            }
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            [class.active]="vistaAttiva() === 'catalogo'"
-            (click)="cambiaVista('catalogo')"
-          >
-            <span>Catalogo &amp; Utenti</span>
-          </button>
-        }
-      </nav>
+      <div class="nav-wrapper">
+        <nav class="nav-tabs" aria-label="Pannelli applicazione">
+          @if (utente()!.ruolo === 'commerciale' || utente()!.ruolo === 'admin') {
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="vistaAttiva() === 'commerciali'"
+              (click)="cambiaVista('commerciali')"
+            >
+              <span>Disponibilità &amp; Prenotazioni</span>
+            </button>
+          }
+          @if (utente()!.ruolo === 'produttore' || utente()!.ruolo === 'admin') {
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="vistaAttiva() === 'produttori'"
+              (click)="cambiaVista('produttori')"
+            >
+              <span>Scoperti &amp; Soci</span>
+              @if (totaleCombinazioniScoperte() > 0) {
+                <span class="badge-danger">{{ totaleCombinazioniScoperte() }}</span>
+              }
+            </button>
+          }
+          @if (utente()!.ruolo === 'admin') {
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="vistaAttiva() === 'conferimenti'"
+              (click)="cambiaVista('conferimenti')"
+            >
+              <span>Conferimenti Lotti</span>
+              @if (segnalazioniAperte().length > 0) {
+                <span class="badge-danger">{{ segnalazioniAperte().length }}</span>
+              }
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="vistaAttiva() === 'ordini'"
+              (click)="cambiaVista('ordini')"
+            >
+              <span>Ordini &amp; Spedizioni</span>
+              @if (prenotazioniDaConfermare() > 0) {
+                <span class="badge-warning">{{ prenotazioniDaConfermare() }}</span>
+              }
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="vistaAttiva() === 'catalogo'"
+              (click)="cambiaVista('catalogo')"
+            >
+              <span>Catalogo &amp; Utenti</span>
+            </button>
+          }
+        </nav>
+      </div>
     </div>
 
     <main class="main-content">

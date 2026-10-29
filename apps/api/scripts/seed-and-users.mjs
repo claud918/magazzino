@@ -145,7 +145,7 @@ if (command === 'user') {
 
     -- 5. Account nominativi per i 3 ruoli
     INSERT INTO utenti (id, email, nome, password_hash, ruolo, socio_id, attivo) VALUES
-      (1, 'admin@cooperativa.it', 'Elena (Amministrazione)', ${sqlString(adminHash)}, 'admin', NULL, 1),
+      (1, 'admin@cooperativa.it', 'Federico Mori (Amministrazione)', ${sqlString(adminHash)}, 'admin', NULL, 1),
       (2, 'commerciale@cooperativa.it', 'Marco (Commerciale)', ${sqlString(commHash)}, 'commerciale', NULL, 1),
       (3, 'rossi@cooperativa.it', 'Giuseppe Rossi (Socio Produttore)', ${sqlString(socioHash)}, 'produttore', 1, 1)
     ON CONFLICT(email) DO UPDATE SET

@@ -25,8 +25,20 @@
 
 .app-container {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+.ios-safe-top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--brand-900);
+  z-index: 100;
+  pointer-events: none;
 }
 
 /* Loading Screen */
@@ -61,10 +73,14 @@
 /* ========================================================================= */
 .login-wrapper {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.25rem;
+  padding: calc(env(safe-area-inset-top, 0px) + 1.25rem)
+    max(1.25rem, env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + 1.25rem)
+    max(1.25rem, env(safe-area-inset-left, 0px));
   background: radial-gradient(circle at 50% 0%, #e1f2e7 0%, #f3f6f4 65%);
 }
 
@@ -174,11 +190,21 @@
 /* ========================================================================= */
 /* TOPBAR & STICKY NAVIGATION                                                */
 /* ========================================================================= */
+.sticky-shell {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--bg-surface);
+  box-shadow: 0 2px 8px rgba(15, 46, 32, 0.06);
+}
+
 .topbar {
   background: linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 100%);
   color: #fff;
-  padding: 0.7rem 1rem;
-  box-shadow: 0 2px 10px rgba(15, 46, 32, 0.12);
+  padding: calc(env(safe-area-inset-top, 0px) + 0.65rem)
+    max(1rem, env(safe-area-inset-right, 0px))
+    0.65rem
+    max(1rem, env(safe-area-inset-left, 0px));
 }
 
 .topbar-inner {
@@ -250,11 +276,7 @@
 }
 
 .nav-wrapper {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
+  background: var(--bg-surface);
   border-bottom: 1px solid var(--border-light);
 }
 
@@ -263,7 +285,8 @@
   margin: 0 auto;
   display: flex;
   overflow-x: auto;
-  padding: 0.45rem 0.75rem;
+  padding: 0.45rem max(0.75rem, env(safe-area-inset-right, 0px)) 0.45rem
+    max(0.75rem, env(safe-area-inset-left, 0px));
   gap: 0.35rem;
   scrollbar-width: none;
   &::-webkit-scrollbar {
@@ -323,7 +346,9 @@
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
-  padding: 1.15rem 1rem 2.5rem;
+  padding: 1.15rem max(1rem, env(safe-area-inset-right, 0px))
+    calc(env(safe-area-inset-bottom, 0px) + 2.5rem)
+    max(1rem, env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
