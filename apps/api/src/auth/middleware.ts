@@ -47,10 +47,19 @@ export const requireAuth = createMiddleware<{ Bindings: Env; Variables: AppVaria
       return c.json({ error: 'Sessione scaduta o non valida' }, 401);
     }
 
+    let nomeNormalizzato = row.nome;
+    if (nomeNormalizzato === 'Elena (Amministrazione)') {
+      nomeNormalizzato = 'Federico Mori (Amministrazione)';
+      await db
+        .update(utenti)
+        .set({ nome: nomeNormalizzato })
+        .where(eq(utenti.id, row.id));
+    }
+
     c.set('utente', {
       id: row.id,
       email: row.email,
-      nome: row.nome,
+      nome: nomeNormalizzato,
       ruolo: row.ruolo,
       socioId: row.socioId,
       attivo: row.attivo,

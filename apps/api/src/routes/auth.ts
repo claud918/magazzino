@@ -103,10 +103,19 @@ authRoutes.post('/login', async (c) => {
     maxAge: Math.floor(SESSION_TTL_MS / 1000),
   });
 
+  let nomeNormalizzato = user.nome;
+  if (nomeNormalizzato === 'Elena (Amministrazione)') {
+    nomeNormalizzato = 'Federico Mori (Amministrazione)';
+    await db
+      .update(utenti)
+      .set({ nome: nomeNormalizzato })
+      .where(eq(utenti.id, user.id));
+  }
+
   const profilo: UtenteProfilo = {
     id: user.id,
     email: user.email,
-    nome: user.nome,
+    nome: nomeNormalizzato,
     ruolo: user.ruolo,
     socioId: user.socioId,
     attivo: user.attivo,
@@ -168,7 +177,12 @@ authRoutes.get('/utenti', requireAuth, requireAdmin, async (c) => {
     .from(utenti)
     .orderBy(utenti.nome);
 
-  return c.json({ utenti: rows });
+  return c.json({
+    utenti: rows.map((r) => ({
+      ...r,
+      nome: r.nome === 'Elena (Amministrazione)' ? 'Federico Mori (Amministrazione)' : r.nome,
+    })),
+  });
 });
 
 authRoutes.post('/utenti', requireAuth, requireAdmin, async (c) => {
